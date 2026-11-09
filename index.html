@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>System Error - Windows</title>
+<style>
+html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#0078d7;color:#fff;
+  font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;cursor:default;
+  user-select:none;-webkit-user-select:none;-ms-user-select:none;}
+.container{max-width:850px;width:90%;margin:0 auto;padding:40px 20px 20px;
+  box-sizing:border-box;height:100%;overflow:hidden;}
+#start-screen{display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;}
+h1{font-size:96px;margin:0 0 30px;line-height:1;font-weight:300;}
+#start-screen h1{font-size:52px;}
+p.instruction{font-size:24px;line-height:1.4;margin:0 0 26px;}
+.progress-container{width:100%;height:4px;background:rgba(255,255,255,.3);margin-top:18px;}
+.progress-bar{height:100%;width:0;background:#fff;}
+.status-text{margin-top:14px;font-size:16px;opacity:.85;}
+.tech-details{margin-top:22px;border-left:1px solid #fff;padding-left:15px;
+  font-family:Consolas,'Courier New',monospace;font-size:14px;line-height:1.6;color:#dcdcdc;}
+#log-output{height:120px;overflow:hidden;}
+.error-highlight{color:#fff;font-weight:bold;}
+.technician-alert{display:none;margin-top:22px;background:#000;padding:20px;border:1px solid #fff;}
+.technician-alert h2{margin-top:0;color:#ff4444;font-size:22px;}
+.phone-number{font-size:32px;font-weight:bold;margin:14px 0;letter-spacing:1px;}
+.start-btn{padding:15px 40px;font-size:18px;background:#fff;color:#0078d7;border:0;cursor:pointer;}
+.blink{animation:blink 1s steps(1,end) infinite;}
+@keyframes blink{0%,49%{opacity:1}50%,100%{opacity:.2}}
+</style>
+</head>
+<body>
+
+<div id="start-screen" class="container">
+  <h1>System Integrity Check</h1>
+  <p class="instruction">Your computer has encountered critical configuration errors.<br>Please initiate a full scan.</p>
+  <button id="start-btn" class="start-btn">Run Analysis</button>
+</div>
+
+<div id="bsod-screen" class="container" style="display:none">
+  <h1 id="sad">:(</h1>
+  <p class="instruction">Your PC ran into a problem and needs to restart. We're just collecting some error info, and then we'll restart for you.</p>
+  <div class="progress-container"><div class="progress-bar" id="bar"></div></div>
+  <p class="status-text" id="status">0% complete</p>
+  <div class="tech-details" id="log-output"></div>
+
+  <div id="final-result" style="display:none">
+    <p class="instruction">For more information about this issue and possible fixes, visit https://windows.com/stopcode</p>
+    <div class="tech-details">
+      If you call a support person, give them this info:<br>
+      <span class="error-highlight">Stop code: CRITICAL_PROCESS_DIED</span><br>
+      Technical Information:<br>
+      *** STOP: 0x000000EF (0xFFFFF800, 0x00000000)
+    </div>
+    <div class="technician-alert" id="tech-modal">
+      <h2>AUTOMATED FIX FAILED</h2>
+      <p>The system identified <strong>42 distinct errors</strong> during the scan. Automatic recovery was unsuccessful.</p>
+      <p><strong>You must contact a technician to manually repair these registry and driver faults.</strong></p>
+      <div class="phone-number">1-800-555-0199</div>
+      <p>Do not close this window until assistance arrives.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var LOGS = [
+    "Reading registry keys...",
+    "Scanning C:\\Windows\\System32...",
+    "Verifying driver signatures...",
+    "Checking disk sectors for bad blocks...",
+    "ERROR: Memory dump failed (Code 0x800)",
+    "WARNING: Corrupt file ntoskrnl.exe",
+    "Stopping background services...",
+    "Querying WMI for hardware faults...",
+    "WARNING: Registry hive checksum mismatch",
+    "ERROR: Volume shadow copy unavailable"
+  ];
+  var progress = 0, timer = null, started = false;
+
+  function $(id) { return document.getElementById(id); }
+  function stop(e) { if (e.preventDefault) e.preventDefault(); return false; }
+
+  function onKey(e) {
+    var k = e.keyCode || e.which;
+    if (e.ctrlKey && e.shiftKey && k === 81) { window.close(); return false; }
+    if (e.ctrlKey && e.shiftKey && k === 82) { location.reload(); return false; }
+    return stop(e);
+  }
+
+  function beginScan() {
+    if (started) return;
+    started = true;
+    $('start-screen').style.display = 'none';
+    $('bsod-screen').style.display = 'block';
+
+    var bar = $('bar'), status = $('status'), log = $('log-output');
+
+    timer = setInterval(function () {
+      progress += 1 + Math.random() * 3.5;
+      if (progress > 100) progress = 100;
+      bar.style.width = progress + '%';
+      status.innerHTML = Math.floor(progress) + '% complete';
+
+      if (Math.random() > 0.72 && progress < 96) {
+        var div = document.createElement('div');
+        div.innerHTML = '&gt; ' + LOGS[Math.floor(Math.random() * LOGS.length)];
+        log.appendChild(div);
+        log.scrollTop = log.scrollHeight;
+      }
+
+      if (progress >= 100) { clearInterval(timer); timer = null; finishScan(); }
+    }, 140);
+  }
+
+  function finishScan() {
+    var log = $('log-output'), div = document.createElement('div');
+    div.innerHTML = '&gt; Analysis complete. 42 faults found.';
+    log.appendChild(div);
+    log.scrollTop = log.scrollHeight;
+    $('status').innerHTML = 'Analysis Complete.';
+    setTimeout(function () {
+      $('final-result').style.display = 'block';
+      $('tech-modal').style.display = 'block';
+      $('sad').className = 'blink';
+    }, 500);
+  }
+
+  $('start-btn').onclick = beginScan;
+
+  document.addEventListener('keydown', onKey, true);
+  document.addEventListener('click', stop, true);
+  document.addEventListener('contextmenu', stop, true);
+  document.addEventListener('wheel', stop, true);
+})();
+</script>
+</body>
+</html>
