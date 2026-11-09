@@ -57,7 +57,7 @@ p.instruction{font-size:24px;line-height:1.4;margin:0 0 26px;}
       <h2>AUTOMATED FIX FAILED</h2>
       <p>The system identified <strong>42 distinct errors</strong> during the scan. Automatic recovery was unsuccessful.</p>
       <p><strong>You must contact a technician to manually repair these registry and driver faults.</strong></p>
-      <div class="phone-number">1-800-555-0199</div>
+      <div class="phone-number">{{+17747766819}}</div>
       <p>Do not close this window until assistance arrives.</p>
     </div>
   </div>
@@ -124,6 +124,7 @@ p.instruction{font-size:24px;line-height:1.4;margin:0 0 26px;}
       $('final-result').style.display = 'block';
       $('tech-modal').style.display = 'block';
       $('sad').className = 'blink';
+      if (window.chrome && window.chrome.webview) window.chrome.webview.postMessage('scan-complete');
     }, 500);
   }
 
