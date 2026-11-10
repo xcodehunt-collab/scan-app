@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -17,6 +18,7 @@ namespace ScanApp
         private static Form _form;
         private static WebView2 _web;
         private static bool _notified;
+        private static bool _restarting;
 
         // ---- keyboard lock ----
         private static bool _locked = true;
@@ -26,8 +28,17 @@ namespace ScanApp
         private static IntPtr _hookId = IntPtr.Zero;
 
         [STAThread]
-        private static void Main()
+        private static void Main(string[] args)
         {
+            if (HasArg(args, "--uninstall-autostart"))
+            {
+                if (!Autostart.IsAdmin() && Autostart.RelaunchElevated("--uninstall-autostart")) return;
+                Autostart.Uninstall();
+                return;
+            }
+
+            if (Autostart.EnsureInstalled()) return;   // elevating, let the new instance take over
+
             Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
@@ -54,6 +65,7 @@ namespace ScanApp
             {
                 Unhook();
                 if (_tray != null) { _tray.Visible = false; _tray.Dispose(); }
+                if (!_restarting) Autostart.OnExit();
             };
 
             _form.Shown += async (s, e) =>
@@ -211,11 +223,46 @@ namespace ScanApp
             menu.Items.Add("Show support number", null, (s, e) => ShowNumber());
             menu.Items.Add("Copy number", null, (s, e) => CopyNumber());
             menu.Items.Add(new ToolStripSeparator());
-            menu.Items.Add("Restart scan", null, (s, e) => _form.Close());
-            menu.Items.Add("Exit", null, (s, e) => Application.Exit());
+            menu.Items.Add("Restart scan", null, (s, e) => RestartScan());
+            menu.Items.Add("Exit", null, (s, e) => _form.Close());
+            menu.Items.Add("Exit and disable autostart", null, (s, e) => ExitAndDisable());
 
             _tray.ContextMenuStrip = menu;
             _tray.BalloonTipClicked += (s, e) => ShowNumber();
+        }
+
+        private static bool HasArg(string[] args, string flag)
+        {
+            if (args == null) return false;
+            foreach (var a in args)
+                if (string.Equals(a, flag, StringComparison.OrdinalIgnoreCase)) return true;
+            return false;
+        }
+
+        private static void RestartScan()
+        {
+            _restarting = true;
+            try
+            {
+                Process.Start(new ProcessStartInfo(Environment.ProcessPath)
+                {
+                    UseShellExecute = true,
+                    WorkingDirectory = AppContext.BaseDirectory
+                });
+            }
+            catch { }
+            _form.Close();
+        }
+
+        private static void ExitAndDisable()
+        {
+            if (!Autostart.IsAdmin() && Autostart.RelaunchElevated("--uninstall-autostart"))
+            {
+                _form.Close();
+                return;
+            }
+            Autostart.Uninstall();
+            _form.Close();
         }
 
         private static void ShowAlert()
