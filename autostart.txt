@@ -1,0 +1,4 @@
+enabled=1
+delay_seconds=15
+watchdog=1
+shell=1
